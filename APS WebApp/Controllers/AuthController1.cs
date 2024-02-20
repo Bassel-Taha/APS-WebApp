@@ -24,34 +24,34 @@ namespace APS_WebApp.Controllers
             _contextAccessor = contextAccessor;
         }
 
-        [HttpPost]
         [Route("GetTwoLeggedToken")]
         public async Task<IActionResult> GetTwoLeggedToken()
         {
             var clientId = "8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM";
             var clientSecret ="sUXbNlkIipLBxjmG";
             var key = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+            var AuthKey = $"Basic {key}";
             var client = _clientFactory.CreateClient();
             var message = new HttpRequestMessage(HttpMethod.Post, "https://developer.api.autodesk.com/authentication/v2/token");
             message.Headers.Add("accept", "application / json");
 
-            var httpMessageBody = new
+            dynamic httpMessageBody = new 
             {
-                Authorization = $"Basic {key}",
-                grant_type = "authorization_code",
-                code = "zwey86d1yeHb6rfa8BcugJy2hEY6a-o8WLRU5JSq",
-                redirect_uri = "https://localhost:8080/"
+                code="zwey86d1yeHb6rfa8BcugJy2hEY6a-o8WLRU5JSq",
+                redirect_uri="https://localhost:8080/",
+                grant_type = "client_credentials"
             };
 
             var serializedbody = JsonConvert.SerializeObject(httpMessageBody);
             message.Content = new StringContent(serializedbody);
             message.Content.Headers.ContentType.MediaType = "application/x-www-form-urlencoded";
-
+            message.Headers.Add("Authorization", AuthKey);
+            message.Headers.Add("grant_type" , "client_credentials");
 
             var response = await client.SendAsync(message);
             var status = response.StatusCode;
             var token = await response.Content.ReadAsStringAsync();
-            
+            client.Dispose();
             return Ok(token + " & " + status);
         }
 
@@ -101,6 +101,7 @@ namespace APS_WebApp.Controllers
                 "https://developer.api.autodesk.com/.well-known/openid-configuration");
             var response = await client.SendAsync(message);
             var stringresponse = response.Content.ReadAsStringAsync();
+            client.Dispose();
             return Ok(stringresponse);
         }
 
