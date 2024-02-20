@@ -5,6 +5,9 @@ using System.Text;
 using System;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using static System.Net.WebRequestMethods;
 
 namespace APS_WebApp.Controllers
 {
@@ -13,6 +16,8 @@ namespace APS_WebApp.Controllers
         private readonly IHttpClientFactory _clientFactory;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly string returnUri = "https://localhost:8080/";
+        public string AuthCode { get; set; }
+
         public AuthController(IHttpClientFactory clientFactory , IHttpContextAccessor contextAccessor)
         {
             _clientFactory = clientFactory;
@@ -20,22 +25,22 @@ namespace APS_WebApp.Controllers
         }
 
         [HttpPost]
-        [Route("Getting2LeggedToken")]
-        public async Task<IActionResult> GetAuthToken()
+        [Route("GetTwoLeggedToken")]
+        public async Task<IActionResult> GetTwoLeggedToken()
         {
-            var clientId = Convert.ToBase64String(Encoding.UTF8.GetBytes("8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM"));
-            var clientSecret = Convert.ToBase64String(Encoding.UTF8.GetBytes("sUXbNlkIipLBxjmG"));
+            var clientId = "8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM";
+            var clientSecret ="sUXbNlkIipLBxjmG";
+            var key = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
             var client = _clientFactory.CreateClient();
             var message = new HttpRequestMessage(HttpMethod.Post, "https://developer.api.autodesk.com/authentication/v2/token");
             message.Headers.Add("accept", "application / json");
 
             var httpMessageBody = new
             {
+                Authorization = $"Basic {key}",
                 grant_type = "authorization_code",
-                code = "code",
-                redirect_uri = "https://localhost:8080",
-                client_id = clientId,
-                client_secret = clientSecret,
+                code = "zwey86d1yeHb6rfa8BcugJy2hEY6a-o8WLRU5JSq",
+                redirect_uri = "https://localhost:8080/"
             };
 
             var serializedbody = JsonConvert.SerializeObject(httpMessageBody);
@@ -46,10 +51,16 @@ namespace APS_WebApp.Controllers
             var response = await client.SendAsync(message);
             var status = response.StatusCode;
             var token = await response.Content.ReadAsStringAsync();
+            
             return Ok(token + " & " + status);
         }
 
-
+        //[Route("https://localhost:8080/?code={code}&state={state}")]
+        public async Task<IActionResult> GetAuthCode()
+        {
+            var context = Request.RouteValues.Values;
+            return Redirect("https://localhost:8080/");
+        }
 
 
 
@@ -59,38 +70,22 @@ namespace APS_WebApp.Controllers
         public async Task<IActionResult> GetAuthorization()
         {
             var clientId = "8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM";
-            var clientSecret = "sUXbNlkIipLBxjmG";
-            var client = _clientFactory.CreateClient();
 
             var dictionary = new Dictionary<string, string>()
             {
                 { "response_type", "code" },
                 { "client_id", clientId },
-                { "redirect_uri", returnUri },
+                { "redirect_uri", "https://localhost:8080/" },
                 { "scope", "data:read" },
                 { "state", "123" }
             };
 
             var uri = QueryHelpers.AddQueryString("https://developer.api.autodesk.com/authentication/v2/authorize", dictionary);
-            var message = new HttpRequestMessage(HttpMethod.Get, uri);
-            message.Headers.Add("accept", "application/json");
-            var response = await client.SendAsync(message);
-
-            if(response.StatusCode == HttpStatusCode.OK)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var contentUri = content;
-                contentUri = String.Join("/", contentUri.Split("/").Select(s => System.Net.WebUtility.UrlEncode(s)));
-                
-                Response.Headers.Add("location" ,  contentUri);
-                return View();
-            }
-            else
-            {
-                return BadRequest();
-            }
-
+            Response.Headers.Add("location", uri);
+            return new StatusCodeResult(303);
         }
+
+
 
 
 
