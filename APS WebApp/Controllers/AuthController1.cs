@@ -11,12 +11,12 @@ using static System.Net.WebRequestMethods;
 
 namespace APS_WebApp.Controllers
 {
+    using APS_WebApp.Models;
+
     public class AuthController : Controller
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly IHttpContextAccessor _contextAccessor;
-        private readonly string returnUri = "https://localhost:8080/";
-        public string AuthCode { get; set; }
 
         public AuthController(IHttpClientFactory clientFactory , IHttpContextAccessor contextAccessor)
         {
@@ -27,18 +27,16 @@ namespace APS_WebApp.Controllers
         [Route("GetTwoLeggedToken")]
         public async Task<IActionResult> GetTwoLeggedToken()
         {
-            var clientId = "8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM";
-            var clientSecret ="sUXbNlkIipLBxjmG";
-            var key = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
-            var AuthKey = $"Basic {key}";
+            var key = SD.Key;
+            var AuthKey = $"Basic {SD.AuthCode}";
             var client = _clientFactory.CreateClient();
             var message = new HttpRequestMessage(HttpMethod.Post, "https://developer.api.autodesk.com/authentication/v2/token");
             message.Headers.Add("accept", "application / json");
 
             dynamic httpMessageBody = new 
             {
-                code="zwey86d1yeHb6rfa8BcugJy2hEY6a-o8WLRU5JSq",
-                redirect_uri="https://localhost:8080/",
+                code=SD.AuthCode,
+                redirect_uri=SD.ReturnPath,
                 grant_type = "client_credentials"
             };
 
@@ -55,12 +53,6 @@ namespace APS_WebApp.Controllers
             return Ok(token + " & " + status);
         }
 
-        //[Route("https://localhost:8080/?code={code}&state={state}")]
-        public async Task<IActionResult> GetAuthCode()
-        {
-            var context = Request.RouteValues.Values;
-            return Redirect("https://localhost:8080/");
-        }
 
 
 
@@ -82,6 +74,7 @@ namespace APS_WebApp.Controllers
 
             var uri = QueryHelpers.AddQueryString("https://developer.api.autodesk.com/authentication/v2/authorize", dictionary);
             Response.Headers.Add("location", uri);
+            
             return new StatusCodeResult(303);
         }
 
