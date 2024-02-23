@@ -37,21 +37,19 @@ namespace APS_WebApp.Controllers
             message.RequestUri = new Uri("https://developer.api.autodesk.com/authentication/v2/token");
             message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("aplication/json"));
             message.Headers.Add("Authorization", $"Basic {SD.Key}");
-            //var grant_type = "client_credentials";
-            //var scope = "data:read";
-            //var content = new
-            //{
-            //    grant_type,
-            //    scope
-            //};
-            var test = new FormUrlEncodedContent(new[]
+            var grant_type = "client_credentials";
+            var scope = "data:read";
+            var contentsKeyValuePairs = new[]
+            {
+                new KeyValuePair<string , string>("grant_type" , "client_credentials"),
+                new KeyValuePair<string , string>("scope" , "data:read")
+            };
+            var content = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>( "grant_type" , "client_credentials"),
                 new KeyValuePair<string, string>("scope" , "data:read")
-            });
-            string serializedcontent = JsonConvert.SerializeObject(test);
-           // message.Content = new StringContent(JsonConvert.SerializeObject(test));
-            message.Content =test;
+            }); 
+            message.Content = content;
             message.Content.Headers.ContentType.MediaType = "application/x-www-form-urlencoded";
 
             var response = await client.SendAsync(message);
