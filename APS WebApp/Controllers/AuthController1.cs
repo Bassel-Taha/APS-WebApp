@@ -25,12 +25,11 @@ namespace APS_WebApp.Controllers
             _contextAccessor = contextAccessor;
         }
 
+        // This is the GetTwoLeggedToken action, it is responsible for getting a two-legged token from the Autodesk API.
         [Route("GetTwoLeggedToken")]
         public async Task<IActionResult> GetTwoLeggedToken()
         {
-            #region MyCode
-
-
+            // This is where the actual request to the Autodesk API is made.
             var client = _clientFactory.CreateClient();
             var message = new HttpRequestMessage();
             message.Method = HttpMethod.Post;
@@ -41,17 +40,19 @@ namespace APS_WebApp.Controllers
             var scope = "data:read";
             var contentsKeyValuePairs = new[]
             {
-                new KeyValuePair<string , string>("grant_type" , "client_credentials"),
-                new KeyValuePair<string , string>("scope" , "data:read")
-            };
+                    new KeyValuePair<string , string>("grant_type" , "client_credentials"),
+                    new KeyValuePair<string , string>("scope" , "data:read")
+                };
+            //here must use the FormUrlEncodedContent or the server will send back error 400 "bad request"
             var content = new FormUrlEncodedContent(new[]
             {
-                new KeyValuePair<string, string>( "grant_type" , "client_credentials"),
-                new KeyValuePair<string, string>("scope" , "data:read")
-            }); 
+                    new KeyValuePair<string, string>( "grant_type" , "client_credentials"),
+                    new KeyValuePair<string, string>("scope" , "data:read")
+                });
             message.Content = content;
             message.Content.Headers.ContentType.MediaType = "application/x-www-form-urlencoded";
 
+            // This is where the response from the Autodesk API is processed.
             var response = await client.SendAsync(message);
             var responseDTO = new ResponseDTO();
             if (response.IsSuccessStatusCode)
@@ -66,17 +67,11 @@ namespace APS_WebApp.Controllers
             }
             client.Dispose();
 
-
-
-            #endregion
-
+            // The result is then returned to the caller.
             return View(responseDTO);
         }
 
-
-
-
-
+        // This is the GetAuthorization action, it is responsible for getting an authorization code from the Autodesk API.
         [HttpGet]
         [Route("GettingAuthorization")]
         public async Task<IActionResult> GetAuthorization()
@@ -84,27 +79,22 @@ namespace APS_WebApp.Controllers
             var clientId = "8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM";
 
             var dictionary = new Dictionary<string, string>()
-            {
-                { "response_type", "code" },
-                { "client_id", clientId },
-                { "redirect_uri", "https://localhost:8080/" },
-                { "scope", "data:read" },
-                { "state", "123" }
-            };
+                {
+                    { "response_type", "code" },
+                    { "client_id", clientId },
+                    { "redirect_uri", "https://localhost:8080/" },
+                    { "scope", "data:read" },
+                    { "state", "123" }
+                };
 
+            //giving the dictionary to the queryHelper to convert it to query and adding it to the base url from Autodesk to send the parameters in the URL
             var uri = QueryHelpers.AddQueryString("https://developer.api.autodesk.com/authentication/v2/authorize", dictionary);
             Response.Headers.Add("location", uri);
 
             return new StatusCodeResult(303);
         }
 
-
-
-
-
-
-
-
+        // This is the GettingOIDG action, it is responsible for getting the OpenID configuration from the Autodesk API.
         [HttpGet]
         [Route("GetOIDG")]
         public async Task<IActionResult> GettingOIDG()
@@ -117,7 +107,5 @@ namespace APS_WebApp.Controllers
             client.Dispose();
             return Ok(stringresponse);
         }
-
-
     }
 }
