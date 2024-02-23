@@ -5,6 +5,7 @@ using System.Text;
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using static System.Net.WebRequestMethods;
@@ -18,7 +19,7 @@ namespace APS_WebApp.Controllers
         private readonly IHttpClientFactory _clientFactory;
         private readonly IHttpContextAccessor _contextAccessor;
 
-        public AuthController(IHttpClientFactory clientFactory , IHttpContextAccessor contextAccessor)
+        public AuthController(IHttpClientFactory clientFactory, IHttpContextAccessor contextAccessor)
         {
             _clientFactory = clientFactory;
             _contextAccessor = contextAccessor;
@@ -27,30 +28,51 @@ namespace APS_WebApp.Controllers
         [Route("GetTwoLeggedToken")]
         public async Task<IActionResult> GetTwoLeggedToken()
         {
-            var key = SD.Key;
-            var AuthKey = $"Basic {SD.AuthCode}";
+            #region MyCode
+
+
             var client = _clientFactory.CreateClient();
-            var message = new HttpRequestMessage(HttpMethod.Post, "https://developer.api.autodesk.com/authentication/v2/token");
-            message.Headers.Add("accept", "application / json");
-
-            dynamic httpMessageBody = new 
+            var message = new HttpRequestMessage();
+            message.Method = HttpMethod.Post;
+            message.RequestUri = new Uri("https://developer.api.autodesk.com/authentication/v2/token");
+            message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("aplication/json"));
+            message.Headers.Add("Authorization", $"Basic {SD.Key}");
+            //var grant_type = "client_credentials";
+            //var scope = "data:read";
+            //var content = new
+            //{
+            //    grant_type,
+            //    scope
+            //};
+            var test = new FormUrlEncodedContent(new[]
             {
-                code=SD.AuthCode,
-                redirect_uri=SD.ReturnPath,
-                grant_type = "client_credentials"
-            };
-
-            var serializedbody = JsonConvert.SerializeObject(httpMessageBody);
-            message.Content = new StringContent(serializedbody);
+                new KeyValuePair<string, string>( "grant_type" , "client_credentials"),
+                new KeyValuePair<string, string>("scope" , "data:read")
+            });
+            string serializedcontent = JsonConvert.SerializeObject(test);
+           // message.Content = new StringContent(JsonConvert.SerializeObject(test));
+            message.Content =test;
             message.Content.Headers.ContentType.MediaType = "application/x-www-form-urlencoded";
-            message.Headers.Add("Authorization", AuthKey);
-            message.Headers.Add("grant_type" , "client_credentials");
 
             var response = await client.SendAsync(message);
-            var status = response.StatusCode;
-            var token = await response.Content.ReadAsStringAsync();
+            var responseDTO = new ResponseDTO();
+            if (response.IsSuccessStatusCode)
+            {
+                responseDTO.Result = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                responseDTO.ErrorMessage = response.StatusCode.ToString();
+                responseDTO.Result = await response.Content.ReadAsStringAsync();
+                responseDTO.issuccess = false;
+            }
             client.Dispose();
-            return Ok(token + " & " + status);
+
+
+
+            #endregion
+
+            return View(responseDTO);
         }
 
 
@@ -74,7 +96,7 @@ namespace APS_WebApp.Controllers
 
             var uri = QueryHelpers.AddQueryString("https://developer.api.autodesk.com/authentication/v2/authorize", dictionary);
             Response.Headers.Add("location", uri);
-            
+
             return new StatusCodeResult(303);
         }
 

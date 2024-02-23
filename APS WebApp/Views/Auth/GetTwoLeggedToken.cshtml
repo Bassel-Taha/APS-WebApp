@@ -1,0 +1,24 @@
+﻿@model ResponseDTO
+
+<div class="d-flex row text-center justify-content-center">
+    
+    <div class="card">
+        <div class="card-body text-center justify-content-center align-content-center">
+            <h2 class="text-danger">@Model.issuccess</h2>
+            @if (@Model.issuccess)
+            {
+                <h1 class="text-primary fw-bold">
+                    @Model.Result
+                </h1>
+            }
+            else
+            {
+                <h1 class="text-danger fw-bold">
+                    @Model.ErrorMessage
+                </h1>
+                <small class="text-danger">@Model.Result</small>
+            }
+            
+        </div>
+    </div>
+</div>

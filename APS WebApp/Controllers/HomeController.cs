@@ -18,9 +18,11 @@ namespace APS_WebApp.Controllers
 
         public IActionResult Index()
         {
-            SD.AuthCode = HttpContext.Request.Query["code"].ToString();
-            SD.State = Request.Query["state"].ToString();
-            
+            if (Request.Query["code"].ToString().Length > 0 )
+            {
+                SD.AuthCode = HttpContext.Request.Query["code"].ToString();
+                SD.State = Request.Query["state"].ToString();
+            }
             return View();
         }
 

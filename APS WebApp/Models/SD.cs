@@ -16,5 +16,9 @@ namespace APS_WebApp.Models
 
         public static string ReturnPath { get; set; } = "https://localhost:8080/";
 
+        public static string AccesToken { get; set; }
+
+        public string JWT { get; set; } = $"Bearer {AccesToken}"; 
+
     }
 }
