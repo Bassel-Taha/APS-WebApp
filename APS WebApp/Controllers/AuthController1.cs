@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using static System.Net.WebRequestMethods;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace APS_WebApp.Controllers
 {
@@ -16,6 +17,7 @@ namespace APS_WebApp.Controllers
 
     using APS_WebApp.Models;
     using APS_WebApp.Models.Auth;
+    using Microsoft.AspNetCore.Http.HttpResults;
 
     public class AuthController : Controller
     {
@@ -40,17 +42,15 @@ namespace APS_WebApp.Controllers
             message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("aplication/json"));
             message.Headers.Add("Authorization", $"Basic {SD.Key}");
             var grant_type = "client_credentials";
-            var scope = "data:read";
-            var contentsKeyValuePairs = new[]
-            {
-                    new KeyValuePair<string , string>("grant_type" , "client_credentials"),
-                    new KeyValuePair<string , string>("scope" , "data:read")
-                };
+            var scope = new []{ "data:read", "data:write" , "data:create"};
+            
             //here must use the FormUrlEncodedContent or the server will send back error 400 "bad request"
             var content = new FormUrlEncodedContent(new[]
             {
                     new KeyValuePair<string, string>( "grant_type" , "client_credentials"),
-                    new KeyValuePair<string, string>("scope" , "data:read")
+                    new KeyValuePair<string, string>("scope" , "data:read"),
+                    new KeyValuePair<string, string>("scope" , "data:write"),
+                    new KeyValuePair<string, string>("scope" , "data:create")
                 });
             message.Content = content;
             message.Content.Headers.ContentType.MediaType = "application/x-www-form-urlencoded";
@@ -144,17 +144,20 @@ namespace APS_WebApp.Controllers
         {
             var clientId = "8qVFzWRgPGamJsG8bGCHTop1oQRnLrbM";
 
-            var dictionary = new Dictionary<string, string>()
-                {
-                    { "response_type", "code" },
-                    { "client_id", clientId },
-                    { "redirect_uri", "https://localhost:8080/" },
-                    { "scope", "data:read" },
-                    { "state", "123" }
-                };
+            var dictionary = new Dictionary<string, List<string>>()
+                                 {
+                                     { "response_type", new List<string> { "code" } },
+                                     { "client_id", new List<string> { clientId } },
+                                     { "redirect_uri", new List<string> { "https://localhost:8080/" } },
+                                     { "scope", new List<string> { "data:read", "data:write", "data:create" } },
+                                     { "state", new List<string> { "123" } }
+                                 };
 
-            //giving the dictionary to the queryHelper to convert it to query and adding it to the base url from Autodesk to send the parameters in the URL
-            var uri = QueryHelpers.AddQueryString("https://developer.api.autodesk.com/authentication/v2/authorize", dictionary);
+            var queryString = string.Join("&", dictionary.SelectMany(kvp =>
+                kvp.Value.Select(value => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(value)}")));
+
+            var baseUrl = "https://developer.api.autodesk.com/authentication/v2/authorize";
+            var uri = $"{baseUrl}?{queryString}";
             Response.Headers.Add("location", uri);
 
             return new StatusCodeResult(303);
