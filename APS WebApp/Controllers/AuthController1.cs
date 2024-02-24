@@ -12,7 +12,10 @@ using static System.Net.WebRequestMethods;
 
 namespace APS_WebApp.Controllers
 {
+    using System.Web;
+
     using APS_WebApp.Models;
+    using APS_WebApp.Models.Auth;
 
     public class AuthController : Controller
     {
@@ -57,7 +60,12 @@ namespace APS_WebApp.Controllers
             var responseDTO = new ResponseDTO();
             if (response.IsSuccessStatusCode)
             {
-                responseDTO.Result = await response.Content.ReadAsStringAsync();
+                var temp = await response.Content.ReadAsStringAsync();
+                var twoLeggedToken = new TwoLeggedToken();
+                twoLeggedToken =
+                    JsonConvert.DeserializeObject<TwoLeggedToken>(await response.Content.ReadAsStringAsync());
+                SD.AccesToken = twoLeggedToken.access_token;
+                responseDTO.Result = twoLeggedToken;
             }
             else
             {
@@ -70,6 +78,64 @@ namespace APS_WebApp.Controllers
             // The result is then returned to the caller.
             return View(responseDTO);
         }
+
+
+
+        // This is the GetThreeLeggedToken action, it is responsible for getting a three-legged token from the Autodesk API.
+        [Route("GetThreeLeggedToken")]
+        public async Task<IActionResult> GetThreeLeggedToken()
+        {
+            // This is where the actual request to the Autodesk API is made.
+            var client = _clientFactory.CreateClient();
+            var message = new HttpRequestMessage();
+
+
+            //Http request message header and method
+            message.Method = HttpMethod.Post;
+            message.RequestUri = new Uri("https://developer.api.autodesk.com/authentication/v2/token");
+            message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("aplication/json"));
+            message.Headers.Add("Authorization", $"Basic {SD.Key}");
+
+
+            //here must use the FormUrlEncodedContent or the server will send back error 400 "bad request"
+            var content = new FormUrlEncodedContent(new[]
+            {
+                    new KeyValuePair<string, string>( "grant_type" , "authorization_code"),
+                    new KeyValuePair<string, string>("code" , SD.AuthCode),
+                    new KeyValuePair<string, string>("redirect_uri" , SD.ReturnPath)
+                });
+
+            //adding the content to the message and adding the content type to the content header 
+            message.Content = content;
+            message.Content.Headers.ContentType.MediaType = "application/x-www-form-urlencoded";
+
+                
+            // This is where the response from the Autodesk API is processed.
+            var response = await client.SendAsync(message);
+            var responseDTO = new ResponseDTO();
+            if (response.IsSuccessStatusCode)
+            {
+                var threeLeggedToken =
+                    JsonConvert.DeserializeObject<ThreeLeggedToken>(await response.Content.ReadAsStringAsync());
+                SD.AuthCode = threeLeggedToken.access_token;
+                SD.RefreshToken = threeLeggedToken.refresh_token;
+                responseDTO.Result = threeLeggedToken;
+
+            }
+            else
+            {
+                responseDTO.ErrorMessage = response.StatusCode.ToString();
+                responseDTO.Result = await response.Content.ReadAsStringAsync();
+                responseDTO.issuccess = false;
+            }
+            client.Dispose();
+            
+            // The result is then returned to the caller.
+            return View(responseDTO);
+        }
+
+
+
 
         // This is the GetAuthorization action, it is responsible for getting an authorization code from the Autodesk API.
         [HttpGet]

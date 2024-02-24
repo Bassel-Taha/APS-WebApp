@@ -2,25 +2,33 @@
 @model ResponseDTO
 
 <div class="d-flex row text-center justify-content-center">
-    
+
     <div class="card">
         <div class="card-body text-center justify-content-center align-content-center">
             <h1 class="text-danger">@Model.issuccess</h1>
             @if (@Model.issuccess)
             {
-                var TwoLeggedToken = Model.Result as TwoLeggedToken;
+                var threeLeggedToken = Model.Result as ThreeLeggedToken;
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="text-black"> Access Token : @TwoLeggedToken.access_token</h5>
+                        <small class="text-success" > Access Token : @threeLeggedToken.access_token</small>
                     </div>
                 </div>
                 <hr/>
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="text-black"> Expiration in : @TwoLeggedToken.expires_in</H5>
-                        </div>
+                        <small class="text-success" > Expiration in : @threeLeggedToken.expires_in</small>
+                    </div>
                 </div>
-
+                <hr/>
+                <div class="card">
+                    <div class="card-body">
+                        <small class="text-success" > Refresh Token : @threeLeggedToken.refresh_token</small>
+                    </div>
+                </div>
+                
+                
+                <small class="text-success" > Refresh Token : @threeLeggedToken.refresh_token</small>
             }
             else
             {
@@ -29,7 +37,7 @@
                 </h1>
                 <small class="text-danger">@Model.Result</small>
             }
-            
+
         </div>
     </div>
 </div>

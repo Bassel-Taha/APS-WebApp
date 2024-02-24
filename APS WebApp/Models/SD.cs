@@ -18,7 +18,9 @@ namespace APS_WebApp.Models
 
         public static string AccesToken { get; set; }
 
-        public string JWT { get; set; } = $"Bearer {AccesToken}"; 
+        public static string JWT { get; set; } = $"Bearer {AccesToken}";
+
+        public static string  RefreshToken { get; set; }
 
     }
 }
